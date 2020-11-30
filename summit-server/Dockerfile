@@ -4,11 +4,10 @@ FROM centos:7
 RUN yum -y update
 RUN yum install -y unzip
 RUN yum install -y wget
-COPY jdk-8u271-linux-x64.rpm /
+
 RUN yum -y install findutils && \
-    rpm -Uvh /jdk-8u271-linux-x64.rpm && \
-    yum -y clean all && \
-    rm -f /jdk-8u271-linux-x64.rpm
+    yum -y install java-1.8.0-openjdk && \
+    yum -y clean all
 
 RUN java -version
 
@@ -16,6 +15,7 @@ ADD lib/oracle-instantclient19.6-basic-19.6.0.0.0-1.x86_64.rpm /oracle-instantcl
 RUN yum localinstall -y /oracle-instantclient19.6-basic-19.6.0.0.0-1.x86_64.rpm --nogpgcheck
 ENV ORACLE_HOME="/usr/lib/oracle/19.6/client64"
 ENV PATH="${ORACLE_HOME}/bin:${PATH}"
+
 RUN adrci -version
 
 RUN cd /opt
@@ -27,7 +27,7 @@ ENV GLASSFISH_HOME=/opt/glassfish4 \
     PATH=$PATH:/opt/glassfish4/bin \
     PASSWORD=glassfish
 
-COPY webapps/GlassFish.ear /GlassFish.ear
+COPY webapps/SummitADF_application.ear /SummitADF_application.ear
 
 #COYP ADF STUFF
 COPY adf-essentials.zip /tempadf/
@@ -46,12 +46,12 @@ RUN echo "AS_ADMIN_PASSWORD=" > /tmp/glassfishpwd && \
     asadmin create-jdbc-connection-pool --user=admin --passwordfile=/tmp/glassfishpwd \
        --restype javax.sql.DataSource \
        --datasourceclassname oracle.jdbc.pool.OracleDataSource \
-       --property user=kri:password=krikri:url="jdbc\:oracle\:thin\:@172.18.0.2\:1521\:xe" kriPool &&\
+       --property user=c##summit_adf:password=summit_adf:url="jdbc\:oracle\:thin\:@summit-db\:1521\:xe" kriPool &&\
     asadmin create-jdbc-resource --user=admin --passwordfile=/tmp/glassfishpwd \
        --connectionpoolid kriPool jdbc/local_xeDS && \
     asadmin --user=admin --passwordfile=/tmp/glassfishpwd \
         create-jvm-options -XX\\:MaxPermSize=512m:-Doracle.mds.cache=simple && \
-    asadmin --user=admin --passwordfile=/tmp/glassfishpwd  deploy /GlassFish.ear && \
+    asadmin --user=admin --passwordfile=/tmp/glassfishpwd  deploy /SummitADF_application.ear && \
     asadmin stop-domain # && \
     rm /tmp/glassfishpwd
 
